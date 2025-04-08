@@ -1,0 +1,43 @@
+-- This file allow to write SQL commands that will be emitted in test and dev.
+-- The commands are commented as their support depends of the database
+-- insert into myentity (id, field) values(1, 'field-1');
+-- insert into myentity (id, field) values(2, 'field-2');
+-- insert into myentity (id, field) values(3, 'field-3');
+-- alter sequence myentity_seq restart with 4;
+
+CREATE TABLE CATEGORIA(
+    CATEGORIA_ID INT PRIMARY KEY IDENTITY NOT NULL,
+    CATEGORIA_NOME VARCHAR(100) NOT NULL
+);
+
+INSERT INTO CATEGORIA (CATEGORIA_NOME) VALUES('Alimento'),('Bebida'),('Bebida alcoolica'),('Limpeza'),('Higiene'),('Frutas'),('Legumes');
+SELECT * FROM CATEGORIA;
+
+ 
+CREATE TABLE PRODUTO(
+    PRODUTO_ID INT PRIMARY KEY IDENTITY NOT NULL,
+    PRODUTO_NOME VARCHAR(255),
+    PRODUTO_DESCRICAO VARCHAR(1000),
+    CATEGORIA_ID INT NOT NULL,
+    PRODUTO_PRECO DECIMAL(10,2),
+    FOREIGN KEY(CATEGORIA_ID) REFERENCES CATEGORIA(CATEGORIA_ID)
+);
+
+INSERT INTO PRODUTO (PRODUTO_NOME, PRODUTO_DESCRICAO, CATEGORIA_ID, PRODUTO_PRECO) VALUES ('Chocolate ao Leite', 'Chocolate cremoso e saboroso', 1, 9.99);
+INSERT INTO PRODUTO (PRODUTO_NOME, PRODUTO_DESCRICAO, CATEGORIA_ID, PRODUTO_PRECO) VALUES ('Banana nanica 1kg', 'Banana nanica de 1kg', 6, 2.44);
+INSERT INTO PRODUTO (PRODUTO_NOME, PRODUTO_DESCRICAO, CATEGORIA_ID, PRODUTO_PRECO) VALUES ('Refrigerante Cola', 'Lata de refrigerante 350ml', 1, 5.5);
+
+
+CREATE TABLE FUNCIONARIO(
+    FUNCIONARIO_ID INT PRIMARY KEY IDENTITY NOT NULL,
+    FUNCIONARIO_NOME VARCHAR(350) NOT NULL,
+    FUNCIONARIO_EMAIL VARCHAR(100) NOT NULL UNIQUE,
+    FUNCIONARIO_IDADE INT NOT NULL
+);
+
+CREATE TABLE CLIENTE(
+    CLIENTE_ID INT PRIMARY KEY IDENTITY NOT NULL,
+    CLIENTE_NOME VARCHAR(350) NOT NULL,
+    CLIENTE_EMAIL VARCHAR(100) NOT NULL UNIQUE,
+    CLIENTE_IDADE INT NOT NULL
+);
