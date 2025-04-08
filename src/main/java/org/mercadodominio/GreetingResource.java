@@ -98,6 +98,25 @@ public class GreetingResource {
         return Response.ok(categoria).build();
     }
 
+    public Response adicionarCategoria(Categoria categoria) {
+        categoriaController.criarCategoria(categoria);
+        return Response.status(Response.Status.CREATED).entity(categoria).build();
+    }
+
+    public Response editarCategoria(Long id, Categoria categoria) {
+        categoriaController.editarCategoria(id, categoria);
+        if (categoria == null) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+        return Response.ok(categoria).build();
+    }
+
+    public Response deletarCategoria(Long id) {
+        categoriaController.excluirCategoria(id);
+        return Response.noContent().build();
+    }
+
+
 
     // ==================== FUNCIONARIO ====================
 
