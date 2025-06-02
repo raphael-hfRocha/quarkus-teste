@@ -36,6 +36,11 @@ public class ClienteController {
                     .entity("ID não deve ser fornecido para um novo cliente").build();
         }
 
+        Cliente clienteExistente = Cliente.find("clienteEmail", cliente.getClienteEmail()).firstResult();
+        if (clienteExistente != null) {
+            return Response.status(Response.Status.OK).entity(clienteExistente).build();
+        }
+
         cliente.persist();
         return Response.status(Response.Status.CREATED).entity(cliente).build();
     }

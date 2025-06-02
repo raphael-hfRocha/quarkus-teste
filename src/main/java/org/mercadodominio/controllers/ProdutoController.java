@@ -2,6 +2,8 @@ package org.mercadodominio.controllers;
 
 import java.util.List;
 import org.mercadodominio.models.entities.Categoria;
+import org.mercadodominio.models.entities.Cliente;
+import org.mercadodominio.models.entities.Funcionario;
 import org.mercadodominio.models.entities.Produto;
 import org.springframework.web.bind.annotation.RequestBody;
 import jakarta.transaction.Transactional;
@@ -52,8 +54,13 @@ public class ProdutoController {
         }
 
         produto.setProdutoCategoria(categoria);
-        produto.persist();
 
+        Produto produtoExistente = Cliente.find("produtoNome", produto.getProdutoNome()).firstResult();
+        if (produtoExistente != null) {
+            return Response.status(Response.Status.OK).entity(produtoExistente).build();
+        }
+
+        produto.persist();
         return Response.status(Response.Status.CREATED).entity(produto).build();
     }
 

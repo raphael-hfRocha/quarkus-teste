@@ -4,6 +4,7 @@ import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import org.mercadodominio.models.entities.Cliente;
 import org.mercadodominio.models.entities.Funcionario;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
@@ -42,9 +43,13 @@ public class FuncionarioController {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity("ID não deve ser fornecido para um novo funcionário").build();
         }
-        // Persiste o novo funcionário
-        funcionario.persist();
 
+        Funcionario funcionarioExistente = Funcionario.find("funcionarioEmail", funcionario.getFuncionarioEmail()).firstResult();
+        if (funcionarioExistente != null) {
+            return Response.status(Response.Status.OK).entity(funcionarioExistente).build();
+        }
+
+        funcionario.persist();
         return Response.status(Response.Status.CREATED).entity(funcionario).build();
     }
  
