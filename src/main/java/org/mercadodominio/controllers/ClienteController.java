@@ -1,11 +1,19 @@
 package org.mercadodominio.controllers;
 
+import java.time.temporal.ChronoUnit;
 import java.util.List;
+
+import io.smallrye.faulttolerance.api.RateLimit;
+import org.eclipse.microprofile.openapi.annotations.media.Content;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.mercadodominio.models.entities.Cliente;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import org.mercadodominio.models.entities.Produto;
 
 @Path("/clientes")
 @Produces(MediaType.APPLICATION_JSON)
@@ -19,6 +27,22 @@ public class ClienteController {
 
     @GET
     @Path("/{id}")
+    @Produces(MediaType.TEXT_PLAIN)
+    @RateLimit(value = 5, window = 1, windowUnit = ChronoUnit.MINUTES)
+    @APIResponses(value = {
+            @APIResponse(
+                    responseCode = "200",
+                    description = "Produto encontrado",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = Produto.class)
+                    )
+            ),
+            @APIResponse(
+                    responseCode = "404",
+                    description = "Produto não encontrado"
+            )
+    })
     public Cliente buscarCliente(Long id) {
         return Cliente.findById(id); // Busca um cliente pelo ID
     }

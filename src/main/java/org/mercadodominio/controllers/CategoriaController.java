@@ -1,12 +1,21 @@
 package org.mercadodominio.controllers;
 
+import io.smallrye.faulttolerance.api.RateLimit;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+
+import java.time.temporal.ChronoUnit;
 import java.util.List;
+
+import org.eclipse.microprofile.openapi.annotations.media.Content;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.mercadodominio.models.entities.Categoria;
 import org.mercadodominio.models.entities.Cliente;
+import org.mercadodominio.models.entities.Produto;
 
 @Path("/categorias")
 @Produces(MediaType.APPLICATION_JSON)
@@ -20,6 +29,22 @@ public class CategoriaController {
     
     @GET
     @Path("/{id}")
+    @Produces(MediaType.TEXT_PLAIN)
+    @RateLimit(value = 5, window = 1, windowUnit = ChronoUnit.MINUTES)
+    @APIResponses(value = {
+            @APIResponse(
+                    responseCode = "200",
+                    description = "Categoria encontrada",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = Categoria.class)
+                    )
+            ),
+            @APIResponse(
+                    responseCode = "404",
+                    description = "Categoria não encontrada"
+            )
+    })
     public Response getCategoriaById(@PathParam("id") Long id) {
         if (id == null || id <= 0) {
             return Response.status(Response.Status.BAD_REQUEST)

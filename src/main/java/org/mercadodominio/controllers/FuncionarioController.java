@@ -1,12 +1,20 @@
 package org.mercadodominio.controllers;
 
+import io.smallrye.faulttolerance.api.RateLimit;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import org.eclipse.microprofile.openapi.annotations.media.Content;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.mercadodominio.models.entities.Cliente;
 import org.mercadodominio.models.entities.Funcionario;
+import org.mercadodominio.models.entities.Produto;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 @Path("/funcionarios")
@@ -21,6 +29,22 @@ public class FuncionarioController {
 
     @GET
     @Path("/{id}")
+    @Produces(MediaType.TEXT_PLAIN)
+    @RateLimit(value = 5, window = 1, windowUnit = ChronoUnit.MINUTES)
+    @APIResponses(value = {
+            @APIResponse(
+                    responseCode = "200",
+                    description = "Produto encontrado",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = Produto.class)
+                    )
+            ),
+            @APIResponse(
+                    responseCode = "404",
+                    description = "Produto não encontrado"
+            )
+    })
     public Response getFuncionarioById(@PathParam("id") Long id) {
         Funcionario funcionario = Funcionario.findById(id);
         if (funcionario == null) {
