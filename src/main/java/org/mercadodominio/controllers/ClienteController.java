@@ -1,9 +1,11 @@
 package org.mercadodominio.controllers;
 
+import java.net.URI;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 import io.smallrye.faulttolerance.api.RateLimit;
+import org.acme.idempotency.Idempotent;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
@@ -21,26 +23,28 @@ import org.mercadodominio.models.entities.Produto;
 public class ClienteController {
 
     @GET
+    @RateLimit(value = 5, window = 1, windowUnit = ChronoUnit.MINUTES)
+    @Idempotent
     public List<Cliente> listarClientes() {
         return Cliente.listAll(); // Método do PanacheEntity para listar todos os clientes
     }
 
     @GET
     @Path("/{id}")
-    @Produces(MediaType.TEXT_PLAIN)
     @RateLimit(value = 5, window = 1, windowUnit = ChronoUnit.MINUTES)
+    @Idempotent
     @APIResponses(value = {
             @APIResponse(
                     responseCode = "200",
-                    description = "Produto encontrado",
+                    description = "Cliente encontrado",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = Produto.class)
+                            schema = @Schema(implementation = Cliente.class)
                     )
             ),
             @APIResponse(
                     responseCode = "404",
-                    description = "Produto não encontrado"
+                    description = "Cliente não encontrado"
             )
     })
     public Cliente buscarCliente(Long id) {
@@ -49,6 +53,7 @@ public class ClienteController {
 
     @POST
     @Transactional
+    @Idempotent(expireAfter = 7200)
     public Response adicionarCliente(Cliente cliente) {
         if (cliente.getClienteNome() == null || cliente.getClienteNome().isEmpty()) {
             return Response.status(Response.Status.BAD_REQUEST)
@@ -66,12 +71,18 @@ public class ClienteController {
         }
 
         cliente.persist();
-        return Response.status(Response.Status.CREATED).entity(cliente).build();
+       // return Response.status(Response.Status.CREATED).entity(cliente).build();
+        return Response
+                .created(URI.create("/clientes/" + cliente.getClienteId()))
+                .entity(cliente)
+                .build();
+
     }
 
     @PUT
     @Path("/{id}")
     @Transactional
+    @Idempotent
     public Response editarCliente(@PathParam("id") Long id, Cliente clienteAtualizado) {
         Cliente cliente = Cliente.findById(id);
         if (cliente == null) {
@@ -95,6 +106,7 @@ public class ClienteController {
     @DELETE
     @Path("/{id}")
     @Transactional
+    @Idempotent
     public Response excluirCliente(Long id) {
         boolean deleted = Cliente.deleteById(id); // Deleta o cliente pelo ID
         if (!deleted) {

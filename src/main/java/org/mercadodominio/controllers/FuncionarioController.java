@@ -5,6 +5,7 @@ import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import org.acme.idempotency.Idempotent;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
@@ -14,6 +15,7 @@ import org.mercadodominio.models.entities.Funcionario;
 import org.mercadodominio.models.entities.Produto;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URI;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
@@ -23,6 +25,8 @@ import java.util.List;
 public class FuncionarioController {
 
     @GET
+    @RateLimit(value = 5, window = 1, windowUnit = ChronoUnit.MINUTES)
+    @Idempotent
     public List<Funcionario> getAllUFuncionarios() {
         return Funcionario.listAll();
     }
@@ -31,18 +35,19 @@ public class FuncionarioController {
     @Path("/{id}")
     @Produces(MediaType.TEXT_PLAIN)
     @RateLimit(value = 5, window = 1, windowUnit = ChronoUnit.MINUTES)
+    @Idempotent
     @APIResponses(value = {
             @APIResponse(
                     responseCode = "200",
-                    description = "Produto encontrado",
+                    description = "Funcionario encontrado",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = Produto.class)
+                            schema = @Schema(implementation = Funcionario.class)
                     )
             ),
             @APIResponse(
                     responseCode = "404",
-                    description = "Produto não encontrado"
+                    description = "Funcionario não encontrado"
             )
     })
     public Response getFuncionarioById(@PathParam("id") Long id) {
@@ -55,6 +60,7 @@ public class FuncionarioController {
 
     @POST
     @Transactional
+    @Idempotent(expireAfter = 7200)
     public Response addFuncionario(@RequestBody Funcionario funcionario) {
         // Validação básica dos campos obrigatórios
         if (funcionario.getFuncionarioNome() == null || funcionario.getFuncionarioNome().isEmpty()) {
@@ -74,12 +80,18 @@ public class FuncionarioController {
         }
 
         funcionario.persist();
-        return Response.status(Response.Status.CREATED).entity(funcionario).build();
+        // return Response.status(Response.Status.CREATED).entity(funcionario).build();
+
+        return Response
+                .created(URI.create("/funcionario/" + funcionario.getFuncionarioId()))
+                .entity(funcionario)
+                .build();
     }
- 
+
     @PUT
     @Path("/{id}")
     @Transactional
+    @Idempotent
     public Response editFuncionario(@PathParam("id") Long id, @RequestBody Funcionario funcionarioAtualizado) {
         Funcionario funcionario = Funcionario.findById(id);
         if (funcionario == null) {
@@ -103,6 +115,7 @@ public class FuncionarioController {
     @DELETE
     @Path("/{id}")
     @Transactional
+    @Idempotent
     public Response deleteFuncionario(@PathParam("id") Long id) {
         boolean deleted = Funcionario.deleteById(id); // Deleta o funcionário pelo ID
         if (!deleted) {

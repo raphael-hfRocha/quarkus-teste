@@ -1,8 +1,10 @@
 package org.mercadodominio.controllers;
 
+import java.net.URI;
 import java.util.List;
 import javax.enterprise.context.ApplicationScoped;
 import io.smallrye.faulttolerance.api.RateLimit;
+import org.acme.idempotency.Idempotent;
 import org.eclipse.microprofile.faulttolerance.Fallback;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
@@ -23,16 +25,16 @@ import java.time.temporal.ChronoUnit;
 public class ProdutoController {
 
     @GET
-    @Produces(MediaType.TEXT_PLAIN)
     @RateLimit(value = 5, window = 1, windowUnit = ChronoUnit.MINUTES)
+    @Idempotent
     public List<Produto> getAllProdutos() {
         return Produto.listAll();
     }
 
     @GET
     @Path("/{id}")
-    @Produces(MediaType.TEXT_PLAIN)
     @RateLimit(value = 5, window = 1, windowUnit = ChronoUnit.MINUTES)
+    @Idempotent
     @APIResponses(value = {
             @APIResponse(
                     responseCode = "200",
@@ -54,6 +56,7 @@ public class ProdutoController {
 
     @POST
     @Transactional
+    @Idempotent(expireAfter = 7200)
     public Response criarProduto(Produto produto) {
         if (produto.getProdutoNome() == null || produto.getProdutoNome().isEmpty()) {
             return Response.status(Response.Status.BAD_REQUEST)
@@ -79,12 +82,17 @@ public class ProdutoController {
         }
 
         produto.persist();
-        return Response.status(Response.Status.CREATED).entity(produto).build();
+        // return Response.status(Response.Status.CREATED).entity(produto).build();
+        return Response
+                .created(URI.create("/produto/" + produto.getProdutoId()))
+                .entity(produto)
+                .build();
     }
 
     @PUT
     @Path("/{id}")
     @Transactional
+    @Idempotent
     public Response atualizarProduto(@PathParam("id") Long id, Produto produtoAtualizado) {
         Produto produto = Produto.findById(id);
         if (produto == null) {
@@ -113,6 +121,7 @@ public class ProdutoController {
     @DELETE
     @Path("/{id}")
     @Transactional
+    @Idempotent
     public Response deletarProduto(@PathParam("id") Long id) {
         boolean deleted = Produto.deleteById(id);
         if (!deleted) {

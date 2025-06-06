@@ -6,9 +6,11 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
+import java.net.URI;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
+import org.acme.idempotency.Idempotent;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
@@ -23,14 +25,16 @@ import org.mercadodominio.models.entities.Produto;
 public class CategoriaController {
 
     @GET
+    @RateLimit(value = 5, window = 1, windowUnit = ChronoUnit.MINUTES)
+    @Idempotent
     public List<Categoria> getAllCategorias() {
         return Categoria.listAll(); // Método do PanacheEntity para listar todas as categorias
     }
-    
+
     @GET
     @Path("/{id}")
-    @Produces(MediaType.TEXT_PLAIN)
     @RateLimit(value = 5, window = 1, windowUnit = ChronoUnit.MINUTES)
+    @Idempotent
     @APIResponses(value = {
             @APIResponse(
                     responseCode = "200",
@@ -60,22 +64,30 @@ public class CategoriaController {
 
     @POST
     @Transactional
+    @Idempotent(expireAfter = 7200)
     public Response criarCategoria(Categoria categoria) {
-        if(categoria.getCategoriaId() != null) {
+        if (categoria.getCategoriaId() != null) {
             return Response.status(Response.Status.BAD_REQUEST).entity("O ID não pode ser fornecido para categoria").build();
         }
-        if(categoria.getCategoriaNome() == null || categoria.getCategoriaNome().isEmpty()) {
+        if (categoria.getCategoriaNome() == null || categoria.getCategoriaNome().isEmpty()) {
             return Response.status(Response.Status.BAD_REQUEST).entity("O nome da categoria não pode ser vazio").build();
         }
 
         categoria.persist();
 
-        return Response.ok(categoria).build();
+        // return Response.ok(categoria).build();
+
+        return Response
+                .created(URI.create("/categoria/" + categoria.getCategoriaId()))
+                .entity(categoria)
+                .build();
     }
 
     @PUT
     @Transactional
     @Path("/{id}")
+    @Idempotent
+
     public Response editarCategoria(@PathParam("id") Long id, Categoria categoriaAtualizada) {
         Categoria categoria = Categoria.findById(id);
         if (categoria == null) {
